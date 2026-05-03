@@ -1,5 +1,6 @@
 import ollama
 import os
+import subprocess
 
 PATH = input("Enter the directory path: ").strip()
 
@@ -27,7 +28,6 @@ for root, dirs, filenames in os.walk(PATH):
 for file_path in files:
     filename = os.path.basename(file_path)
     prompt = f"Categorize the file '{filename}' into one of these categories: {', '.join(categories)}. Respond with only the category name."
-    
     try:
         response = ollama.chat(model='qwen3.5:4b', messages=[
             {
@@ -36,6 +36,13 @@ for file_path in files:
             },
         ])
         category = response['message']['content'].strip()
-        print(f"File: {filename} -> Category: {category}")
+        
+        if category in categories:
+            dest_dir = os.path.join(ORGANIZED_DIR, category)
+            subprocess.run(["cp", file_path, dest_dir], check=True)
+            print(f"File: {filename} -> Categorized as '{category}' and copied.")
+        else:
+            print(f"File: {filename} -> Unknown category returned: '{category}'")
+            
     except Exception as e:
-        print(f"Error categorizing {filename}: {e}")
+        print(f"Error processing {filename}: {e}")
