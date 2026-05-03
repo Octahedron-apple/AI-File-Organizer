@@ -8,8 +8,16 @@ if not os.path.isdir(PATH):
     exit(1)
 
 with open("categories.txt", "r") as f:
-    categories = f.readlines()
+    categories = [line.strip() for line in f.readlines() if line.strip()]
 
+ABS_PATH = os.path.abspath(os.path.normpath(PATH))
+ORGANIZED_DIR = ABS_PATH + "-organized"
+if not os.path.exists(ORGANIZED_DIR):
+    os.makedirs(ORGANIZED_DIR)
+for category in categories:
+    category_path = os.path.join(ORGANIZED_DIR, category)
+    if not os.path.exists(category_path):
+        os.makedirs(category_path)
 files = []
 
 for root, dirs, filenames in os.walk(PATH):
@@ -18,7 +26,7 @@ for root, dirs, filenames in os.walk(PATH):
 
 for file_path in files:
     filename = os.path.basename(file_path)
-    prompt = f"Categorize the file '{filename}' into one of these categories: {', '.join([c.strip() for c in categories])}. Respond with only the category name."
+    prompt = f"Categorize the file '{filename}' into one of these categories: {', '.join(categories)}. Respond with only the category name."
     
     try:
         response = ollama.chat(model='qwen3.5:4b', messages=[
