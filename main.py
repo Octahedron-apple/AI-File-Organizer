@@ -16,5 +16,18 @@ for root, dirs, filenames in os.walk(PATH):
     for filename in filenames:
         files.append(os.path.join(root, filename))
 
-print(f"Found {len(files)} files.")
-print(files)
+for file_path in files:
+    filename = os.path.basename(file_path)
+    prompt = f"Categorize the file '{filename}' into one of these categories: {', '.join([c.strip() for c in categories])}. Respond with only the category name."
+    
+    try:
+        response = ollama.chat(model='qwen3.5:4b', messages=[
+            {
+                'role': 'user',
+                'content': prompt,
+            },
+        ])
+        category = response['message']['content'].strip()
+        print(f"File: {filename} -> Category: {category}")
+    except Exception as e:
+        print(f"Error categorizing {filename}: {e}")
