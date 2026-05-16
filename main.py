@@ -54,25 +54,44 @@ tools = [
     }
 ]
 
+IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+
 for i in range(len(files)):
     file_path = files[i]
     filename = os.path.basename(file_path)
     
+    ext = os.path.splitext(filename)[1].lower()
+    is_img = False
+    for j in range(len(IMAGE_EXTS)):
+        if ext == IMAGE_EXTS[j]:
+            is_img = True
+            break
+            
     try:
-        content = subprocess.check_output(["cat", file_path], text=True, errors='ignore')
-        
         category_list_string = ""
         for j in range(len(categories)):
             category_list_string = category_list_string + categories[j]
             if j < len(categories) - 1:
                 category_list_string = category_list_string + ", "
 
-        prompt = "You are given the name of the file: " + filename + " and its content: " + content + ". Determine the best category for the file from the list of categories: " + category_list_string + ". Respond with a single tool call to 'organize_file'."
+        images_param = None
+        if is_img == True:
+            images_param = [file_path]
+            prompt = "You are given an image named: " + filename + ". Determine the best category for this file from the list of categories: " + category_list_string + ". Respond with a single tool call to 'organize_file'."
+        else:
+            content = subprocess.check_output(["cat", file_path], text=True, errors='ignore')
+            if len(content) > 5000:
+                content = content[0:5000]
+            prompt = "You are given the name of the file: " + filename + " and its content: " + content + ". Determine the best category for the file from the list of categories: " + category_list_string + ". Respond with a single tool call to 'organize_file'."
 
         response = ollama.chat(
             model='qwen3.5:2b',
             messages=[
-                {'role': 'user', 'content': prompt}
+                {
+                    'role': 'user', 
+                    'content': prompt,
+                    'images': images_param
+                }
             ],
             tools=tools,
         )
