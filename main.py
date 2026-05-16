@@ -54,10 +54,10 @@ for file_path in files:
     try:
         content = subprocess.check_output(["cat", file_path], text=True, errors='ignore')
         
-        prompt = f"Determine the best category for the file: {filename}\n\nFull File Content:\n{content}"
+        prompt = f"You are given the name of the file: {filename} and its content: {content}. Determine the best category for the file from the list of categories: {', '.join(categories)}. Respond with a single tool call to 'organize_file'."
 
         response = ollama.chat(
-            model='qwen3.5:4b',
+            model='qwen3.5:2b',
             messages=[
                 {'role': 'user', 'content': prompt}
             ],
