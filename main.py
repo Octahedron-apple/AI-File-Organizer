@@ -3,30 +3,35 @@ import os
 import subprocess
 import json
 
-PATH = input("Enter the directory path: ").strip()
+path_input = input("Enter the directory path: ")
+PATH = path_input.strip()
 
-if not os.path.isdir(PATH):
-    print(f"Error: {PATH} is not a valid directory.")
+if os.path.isdir(PATH) == False:
+    print("Error: path is not a valid directory.")
     exit(1)
 
-with open("categories.txt", "r") as f:
-    categories = [line.strip() for line in f.readlines() if line.strip()]
+f = open("categories.txt", "r")
+lines = f.readlines()
+f.close()
+
+categories = []
+for i in range(len(lines)):
+    line = lines[i].strip()
+    if len(line) > 0:
+        categories.append(line)
 
 ABS_PATH = os.path.abspath(os.path.normpath(PATH))
 ORGANIZED_DIR = ABS_PATH + "-organized"
 
-if not os.path.exists(ORGANIZED_DIR):
-    os.makedirs(ORGANIZED_DIR)
+subprocess.run(["mkdir", "-p", ORGANIZED_DIR])
 
-for category in categories:
+for i in range(len(categories)):
+    category = categories[i]
     category_path = os.path.join(ORGANIZED_DIR, category)
-    if not os.path.exists(category_path):
-        os.makedirs(category_path)
+    subprocess.run(["mkdir", "-p", category_path])
 
-files = []
-for root, dirs, filenames in os.walk(PATH):
-    for filename in filenames:
-        files.append(os.path.join(root, filename))
+files_output = subprocess.check_output(["find", PATH, "-type", "f"], text=True)
+files = files_output.splitlines()
 
 tools = [
     {
@@ -49,12 +54,20 @@ tools = [
     }
 ]
 
-for file_path in files:
+for i in range(len(files)):
+    file_path = files[i]
     filename = os.path.basename(file_path)
+    
     try:
         content = subprocess.check_output(["cat", file_path], text=True, errors='ignore')
         
-        prompt = f"You are given the name of the file: {filename} and its content: {content}. Determine the best category for the file from the list of categories: {', '.join(categories)}. Respond with a single tool call to 'organize_file'."
+        category_list_string = ""
+        for j in range(len(categories)):
+            category_list_string = category_list_string + categories[j]
+            if j < len(categories) - 1:
+                category_list_string = category_list_string + ", "
+
+        prompt = "You are given the name of the file: " + filename + " and its content: " + content + ". Determine the best category for the file from the list of categories: " + category_list_string + ". Respond with a single tool call to 'organize_file'."
 
         response = ollama.chat(
             model='qwen3.5:2b',
@@ -65,14 +78,16 @@ for file_path in files:
         )
 
         if 'tool_calls' in response['message']:
-            for tool in response['message']['tool_calls']:
+            tool_calls = response['message']['tool_calls']
+            for k in range(len(tool_calls)):
+                tool = tool_calls[k]
                 if tool['function']['name'] == 'organize_file':
                     category = tool['function']['arguments']['category']
                     dest_dir = os.path.join(ORGANIZED_DIR, category)
                     subprocess.run(["cp", file_path, dest_dir], check=True)
-                    print(f"File: {filename} -> Organized into '{category}' via tool call.")
+                    print("File: " + filename + " -> Organized into '" + category + "' via tool call.")
         else:
-            print(f"File: {filename} -> AI did not use the organization tool.")
+            print("File: " + filename + " -> AI did not use the organization tool.")
 
     except Exception as e:
-        print(f"Error processing {filename}: {e}")
+        print("Error processing " + filename + ": " + str(e))
