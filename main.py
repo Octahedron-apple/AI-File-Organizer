@@ -28,7 +28,6 @@ for root, dirs, filenames in os.walk(PATH):
     for filename in filenames:
         files.append(os.path.join(root, filename))
 
-# Define the tool for the AI
 tools = [
     {
         'type': 'function',
@@ -53,10 +52,14 @@ tools = [
 for file_path in files:
     filename = os.path.basename(file_path)
     try:
+        content = subprocess.check_output(["cat", file_path], text=True, errors='ignore')
+        
+        prompt = f"Determine the best category for the file: {filename}\n\nFull File Content:\n{content}"
+
         response = ollama.chat(
             model='qwen3.5:4b',
             messages=[
-                {'role': 'user', 'content': f"Determine the best category for the file: {filename}"}
+                {'role': 'user', 'content': prompt}
             ],
             tools=tools,
         )
