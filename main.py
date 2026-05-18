@@ -62,19 +62,56 @@ tools = [
     }
 ]
 
+import gui
+import tkinter as tk
+
 IMAGE_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".gif"]
 
-for i in range(len(files)):
-    file_path = files[i]
+gui_app = gui.OG()
+
+current_index = 0
+
+def process_next():
+    global current_index
+    if current_index >= len(files):
+        gui_app.file_label.configure(text="Finished Organizing All Files!")
+        return
+
+    file_path = files[current_index]
     filename = os.path.basename(file_path)
-    
+
+    gui_app.file_label.configure(text="File Name: " + filename)
+    gui_app.category_label.configure(text="Assigned Category: Processing...", fg="yellow")
+    gui_app.response_text.delete("1.0", tk.END)
+    gui_app.content_text.delete("1.0", tk.END)
+
     ext = os.path.splitext(filename)[1].lower()
     is_img = False
     for j in range(len(IMAGE_EXTS)):
         if ext == IMAGE_EXTS[j]:
             is_img = True
             break
-            
+
+    if is_img:
+        gui_app.content_text.pack_forget()
+        photo = convert_to_png(file_path)
+        if photo is not None:
+            gui_app.image_label.configure(image=photo)
+            gui_app.image_label.image = photo
+            gui_app.image_label.pack(expand=True, fill="both")
+        else:
+            gui_app.image_label.pack_forget()
+    else:
+        gui_app.image_label.pack_forget()
+        gui_app.content_text.pack(expand=True, fill="both")
+        try:
+            content = subprocess.check_output(["cat", file_path], text=True, errors='ignore')
+            if len(content) > 5000:
+                content = content[0:5000]
+            gui_app.content_text.insert("1.0", content)
+        except Exception:
+            gui_app.content_text.insert("1.0", "[Could not read file content]")
+
     try:
         category_list_string = ""
         for j in range(len(categories)):
@@ -83,13 +120,17 @@ for i in range(len(files)):
                 category_list_string = category_list_string + ", "
 
         images_param = None
-        if is_img == True:
+        if is_img:
             images_param = [file_path]
             prompt = "You are given an image named: " + filename + ". Determine the best category for this file from the list of categories: " + category_list_string + ". Respond with a single tool call to 'organize_file'."
         else:
-            content = subprocess.check_output(["cat", file_path], text=True, errors='ignore')
-            if len(content) > 5000:
-                content = content[0:5000]
+            content = ""
+            try:
+                content = subprocess.check_output(["cat", file_path], text=True, errors='ignore')
+                if len(content) > 5000:
+                    content = content[0:5000]
+            except Exception:
+                pass
             prompt = "You are given the name of the file: " + filename + " and its content: " + content + ". Determine the best category for the file from the list of categories: " + category_list_string + ". Respond with a single tool call to 'organize_file'."
 
         response = ollama.chat(
@@ -104,17 +145,30 @@ for i in range(len(files)):
             tools=tools,
         )
 
+        raw_response_content = str(response['message'])
+        gui_app.response_text.insert("1.0", raw_response_content)
+
+        assigned_category = "None"
         if 'tool_calls' in response['message']:
             tool_calls = response['message']['tool_calls']
             for k in range(len(tool_calls)):
                 tool = tool_calls[k]
                 if tool['function']['name'] == 'organize_file':
                     category = tool['function']['arguments']['category']
+                    assigned_category = category
                     dest_dir = os.path.join(ORGANIZED_DIR, category)
                     subprocess.run(["cp", file_path, dest_dir], check=True)
-                    print("File: " + filename + " -> Organized into '" + category + "' via tool call.")
+            
+            gui_app.category_label.configure(text="Assigned Category: " + assigned_category, fg="green")
         else:
-            print("File: " + filename + " -> AI did not use the organization tool.")
+            gui_app.category_label.configure(text="Assigned Category: No tool call used", fg="red")
 
     except Exception as e:
-        print("Error processing " + filename + ": " + str(e))
+        gui_app.category_label.configure(text="Error processing file", fg="red")
+        gui_app.response_text.insert("1.0", str(e))
+
+    current_index = current_index + 1
+    gui_app.root.after(3000, process_next)
+
+gui_app.root.after(100, process_next)
+gui_app.root.mainloop()
