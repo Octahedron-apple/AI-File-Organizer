@@ -143,14 +143,29 @@ def process_next():
                 }
             ],
             tools=tools,
+            stream=True
         )
 
-        raw_response_content = str(response['message'])
-        gui_app.response_text.insert("1.0", raw_response_content)
+        tool_calls = []
+        for chunk in response:
+            if 'message' in chunk:
+                msg = chunk['message']
+                if 'content' in msg and msg['content']:
+                    text_chunk = msg['content']
+                    gui_app.response_text.insert(tk.END, text_chunk)
+                    print(text_chunk, end="", flush=True)
+                    gui_app.root.update()
+                if 'tool_calls' in msg and msg['tool_calls']:
+                    for tc in msg['tool_calls']:
+                        tool_calls.append(tc)
+                        tool_desc = "\n[Tool Call: " + tc['function']['name'] + " with args: " + json.dumps(tc['function']['arguments']) + "]\n"
+                        gui_app.response_text.insert(tk.END, tool_desc)
+                        print(tool_desc, end="", flush=True)
+                        gui_app.root.update()
+        print("")
 
         assigned_category = "None"
-        if 'tool_calls' in response['message']:
-            tool_calls = response['message']['tool_calls']
+        if len(tool_calls) > 0:
             for k in range(len(tool_calls)):
                 tool = tool_calls[k]
                 if tool['function']['name'] == 'organize_file':
