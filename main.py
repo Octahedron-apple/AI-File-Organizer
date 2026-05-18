@@ -2,6 +2,14 @@ import ollama
 import os
 import subprocess
 import json
+from PIL import Image, ImageTk
+
+def convert_to_png(input_path):
+    try:
+        img = Image.open(input_path)
+        return ImageTk.PhotoImage(img)
+    except Exception as e:
+        return None
 
 path_input = input("Enter the directory path: ")
 PATH = path_input.strip()
