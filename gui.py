@@ -1,31 +1,59 @@
-import tkinter as tk
+import customtkinter as ctk
+
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
 class OG:
     def __init__(self):
-        self.root = tk.Tk()
+        self.root = ctk.CTk()
         self.root.title("AI File Organizer")
-        self.root.geometry("1920x1080")
-        self.root.configure(bg="black")
+        self.root.geometry("1200x800")
+        
+        self.config_frame = ctk.CTkFrame(self.root)
+        self.config_frame.pack(fill="x", padx=20, pady=(20, 0))
+        
+        self.provider_var = ctk.StringVar(value="Ollama")
+        self.provider_menu = ctk.CTkOptionMenu(self.config_frame, values=["Ollama", "OpenRouter"], variable=self.provider_var)
+        self.provider_menu.pack(side="left", padx=10, pady=10)
+        
+        self.model_var = ctk.StringVar(value="qwen3.5:2b")
+        self.model_entry = ctk.CTkEntry(self.config_frame, textvariable=self.model_var, placeholder_text="Model Name")
+        self.model_entry.pack(side="left", padx=10, pady=10)
+        
+        self.api_key_var = ctk.StringVar(value="")
+        self.api_key_entry = ctk.CTkEntry(self.config_frame, textvariable=self.api_key_var, placeholder_text="OpenRouter API Key", show="*")
+        self.api_key_entry.pack(side="left", expand=True, fill="x", padx=10, pady=10)
+        
+        self.start_button = ctk.CTkButton(self.config_frame, text="Start Organizing")
+        self.start_button.pack(side="right", padx=10, pady=10)
+        
+        self.main_frame = ctk.CTkFrame(self.root, fg_color="transparent")
+        self.main_frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-        self.left_frame = tk.Frame(self.root, bg="black")
-        self.left_frame.pack(side="left", expand=True, fill="both", padx=20, pady=20)
+        self.left_frame = ctk.CTkFrame(self.main_frame)
+        self.left_frame.pack(side="left", expand=True, fill="both", padx=(0, 10))
 
-        self.right_frame = tk.Frame(self.root, bg="black")
-        self.right_frame.pack(side="right", expand=True, fill="both", padx=20, pady=20)
+        self.right_frame = ctk.CTkFrame(self.main_frame)
+        self.right_frame.pack(side="right", expand=True, fill="both", padx=(10, 0))
 
-        self.file_label = tk.Label(self.left_frame, text="File Name:", fg="white", bg="black", font=("Arial", 16))
-        self.file_label.pack(anchor="w", pady=10)
+        self.file_label = ctk.CTkLabel(self.left_frame, text="File Name:", font=("Arial", 18, "bold"))
+        self.file_label.pack(anchor="w", padx=20, pady=(20, 10))
 
-        self.content_text = tk.Text(self.left_frame, fg="white", bg="#1a1a1a", insertbackground="white", font=("Arial", 12))
-        self.content_text.pack(expand=True, fill="both")
+        self.content_text = ctk.CTkTextbox(self.left_frame, font=("Arial", 14), wrap="word")
+        self.content_text.pack(expand=True, fill="both", padx=20, pady=(0, 20))
 
-        self.image_label = tk.Label(self.left_frame, bg="black")
+        self.image_label = ctk.CTkLabel(self.left_frame, text="")
 
-        self.category_label = tk.Label(self.right_frame, text="Assigned Category: -", fg="green", bg="black", font=("Arial", 18, "bold"))
-        self.category_label.pack(anchor="w", pady=10)
+        self.category_label = ctk.CTkLabel(self.right_frame, text="Assigned Category: -", font=("Arial", 20, "bold"), text_color="#2ECC71")
+        self.category_label.pack(anchor="w", padx=20, pady=(20, 10))
 
-        self.response_label = tk.Label(self.right_frame, text="AI Response:", fg="white", bg="black", font=("Arial", 16))
-        self.response_label.pack(anchor="w", pady=10)
+        self.response_label = ctk.CTkLabel(self.right_frame, text="AI Response:", font=("Arial", 18, "bold"))
+        self.response_label.pack(anchor="w", padx=20, pady=(10, 10))
 
-        self.response_text = tk.Text(self.right_frame, fg="white", bg="#1a1a1a", insertbackground="white", font=("Arial", 12))
-        self.response_text.pack(expand=True, fill="both")
+        self.response_text = ctk.CTkTextbox(self.right_frame, font=("Arial", 14), wrap="word")
+        self.response_text.pack(expand=True, fill="both", padx=20, pady=(0, 20))
+
+        self.progress_bar = ctk.CTkProgressBar(self.root)
+        self.progress_bar.pack(fill="x", padx=20, pady=(0, 20))
+        self.progress_bar.set(0)
+
